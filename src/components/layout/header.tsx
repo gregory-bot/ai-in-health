@@ -26,7 +26,7 @@ export function Header() {
                 alt="TeleCure Logo"
                 className="h-8 w-8" 
               />
-              <span className="text-2xl font-bold text-blue-600">teleCure hospital</span>
+              <span className="text-2xl font-bold text-red-600">teleCure hospital</span>
             </a>
           </div>
           

@@ -8,6 +8,8 @@ interface ConsultationFees {
 }
 
 interface AnalysisResult {
+  diagnosis: string;
+  confidence: number;
   condition: string;
   probability: number;
   recommendations: string[];
@@ -1329,6 +1331,8 @@ export async function analyzeSymptoms(symptomText: string): Promise<AnalysisResu
     tf.dispose([inputTensor, prediction]);
 
     const result: AnalysisResult = {
+      diagnosis: condition,
+      confidence: probability,
       condition,
       probability,
       recommendations,

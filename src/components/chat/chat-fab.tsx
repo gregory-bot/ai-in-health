@@ -36,7 +36,7 @@ export function ChatFAB() {
       if (!hasGreeted) {
         setTimeout(() => {
           const greetMessage: Message = {
-            text: `Hello ${user?.username || 'patient'}, describe your symptoms 😊.`,
+            text: `Hello ${user?.username || 'patient'}, describe your symptoms to daktari 😊.`,
             sender: 'system',
             timestamp: Date.now(),
             id: `${Date.now()}`,
@@ -115,8 +115,8 @@ If symptoms persist or worsen, please schedule a consultation with one of our do
         <div className="fixed bottom-20 right-4 w-[90%] max-w-sm bg-white rounded-lg shadow-xl z-50 transition-all duration-300 ease-in-out transform">
           <div className="flex items-center justify-between p-3 border-b bg-blue-600 text-white rounded-t-lg">
             <div>
-              <h3 className="text-lg font-semibold">Welcome to TeleCure Health 🩺</h3>
-              <p className="text-sm text-blue-100">Chat with our online doctor 👨‍⚕️ 😊</p>
+              <h3 className="text-lg font-semibold">welcome to teleCure health 🩺</h3>
+              <p className="text-sm text-blue-100">chat with our online doctor 👨‍⚕️ 😊</p>
             </div>
             <Button
               variant="secondary"

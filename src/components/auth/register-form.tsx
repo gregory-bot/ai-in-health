@@ -45,7 +45,7 @@ export function RegisterForm() {
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight text-gray-900">Create an Account</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Join TeleCure for personalized healthcare
+            Join teleCure for personalized healthcare
           </p>
         </div>
 
