@@ -25,12 +25,12 @@ export function PopupAd({ onClose }: PopupAdProps) {
     const timer = setTimeout(() => {
       setIsVisible(true);
       console.log('Popup should now be visible.');
-    }, 10000); // 10 seconds delay
+    }, 20000); // 10 seconds delay
 
     // Set up an interval to change the image every 5 seconds
     const imageChangeInterval = setInterval(() => {
       setImageIndex((prevIndex) => (prevIndex + 1) % images.length);
-    }, 5000); // Change image every 5 seconds
+    }, 8000); // Change image every 5 seconds
 
     return () => {
       clearTimeout(timer); // Cleanup the timer

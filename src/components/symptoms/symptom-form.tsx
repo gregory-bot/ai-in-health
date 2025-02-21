@@ -16,8 +16,7 @@ const symptomSchema = z.object({
 
 const backgroundVideos = [
   'https://media.istockphoto.com/id/487962955/video/vital-signs-monitor.mp4?s=mp4-640x640-is&k=20&c=mhgzsSNCMUXUAgBrP7ZWvkCeJ_DhZGAVIRIpJpQ_jC0=',
-  'https://videos.pexels.com/video-files/5863354/5863354-hd_1080_1920_29fps.mp4',
-  'https://videos.pexels.com/video-files/5453774/5453774-uhd_2560_1440_25fps.mp4'
+  'https://videos.pexels.com/video-files/7033922/7033922-uhd_2560_1440_25fps.mp4'
 ];
 
 export function SymptomForm() {
