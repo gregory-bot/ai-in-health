@@ -83,7 +83,7 @@ export function RegisterForm() {
                   {...register('email')}
                   type="email"
                   className="block w-full rounded-md border border-gray-300 pl-10 py-2 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="kipngenogregory@.com"
+                  placeholder="kipngenogregory@gmail.com"
                 />
               </div>
               {errors.email && (
