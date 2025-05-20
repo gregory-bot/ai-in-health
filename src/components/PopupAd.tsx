@@ -12,20 +12,20 @@ export function PopupAd({ onClose }: PopupAdProps) {
 
   // List of images to display in the popup
   const images = [
-    'https://images.pexels.com/photos/3786215/pexels-photo-3786215.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    'https://images.pexels.com/photos/4386467/pexels-photo-4386467.jpeg?auto=compress&cs=tinysrgb&w=800',
-    'https://images.pexels.com/photos/3786126/pexels-photo-3786126.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://actionchange.org/wp-content/uploads/2019/10/pict_large-6.jpg',
+    'https://images.pexels.com/photos/3786157/pexels-photo-3786157.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://th.bing.com/th/id/OIP.aCFNQ4HBUV9RP00fm6tIwwHaEK?cb=iwc2&rs=1&pid=ImgDetMain',
   ];
 
   useEffect(() => {
     // Debug: Ensure this is firing
-    console.log('useEffect fired: Popup will show in 10 seconds.');
+    console.log('useEffect fired: Popup will show in 20 seconds.');
 
     // Show the popup after 10 seconds
     const timer = setTimeout(() => {
       setIsVisible(true);
       console.log('Popup should now be visible.');
-    }, 20000); // 10 seconds delay
+    }, 60000); 
 
     // Set up an interval to change the image every 5 seconds
     const imageChangeInterval = setInterval(() => {

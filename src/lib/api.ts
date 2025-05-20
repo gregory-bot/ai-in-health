@@ -15,7 +15,7 @@ export const analyzeSymptoms = async (symptoms: any) => {
 
 export const processPayment = async (paymentDetails: any) => {
   try {
-    const response = await api.post('/payment', paymentDetails);
+    const response = await api.post('/payment', paymentDetails); 
     return response.data;
   } catch (error) {
     throw new Error('Payment processing failed');

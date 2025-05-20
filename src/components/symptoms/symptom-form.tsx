@@ -14,9 +14,9 @@ const symptomSchema = z.object({
   additionalInfo: z.string().optional(),
 });
 
-const backgroundVideos = [
-  'https://media.istockphoto.com/id/487962955/video/vital-signs-monitor.mp4?s=mp4-640x640-is&k=20&c=mhgzsSNCMUXUAgBrP7ZWvkCeJ_DhZGAVIRIpJpQ_jC0=',
-  'https://videos.pexels.com/video-files/7033922/7033922-uhd_2560_1440_25fps.mp4'
+const backgroundImages = [
+  'https://images.pexels.com/photos/161449/medical-tablets-pills-drug-161449.jpeg?auto=compress&cs=tinysrgb&w=1200',
+  'https://media.istockphoto.com/id/1513072392/photo/hands-holding-paper-head-human-brain-with-flowers-self-care-and-mental-health-concept.jpg?b=1&s=612x612&w=0&k=20&c=boMJwSib2tbtpppWfjTiIkJLwHVLHipeRd8QzDE0Dl0='
 ];
 
 export function SymptomForm() {
@@ -28,7 +28,7 @@ export function SymptomForm() {
     duration: string;
   } | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const {
@@ -43,10 +43,10 @@ export function SymptomForm() {
     const interval = setInterval(() => {
       setIsTransitioning(true);
       setTimeout(() => {
-        setCurrentVideoIndex((prevIndex) => (prevIndex + 1) % backgroundVideos.length);
+        setCurrentImageIndex((prevIndex) => (prevIndex + 1) % backgroundImages.length);
         setIsTransitioning(false);
-      }, 500); // Transition duration
-    }, 9000); // Change video every 9 seconds
+      }, 500);
+    }, 9000);
 
     return () => clearInterval(interval);
   }, []);
@@ -54,15 +54,13 @@ export function SymptomForm() {
   const onSubmit = async (data: { mainSymptom: any; duration: any; severity: any; additionalInfo: any; }) => {
     setIsAnalyzing(true);
     try {
-      // Format the symptom text for analysis
       const symptomText = `Patient reports ${data.mainSymptom}. ` +
         `This has been occurring for ${data.duration}. ` +
         `The severity is ${data.severity}. ` +
         (data.additionalInfo ? `Additional notes: ${data.additionalInfo}` : '');
 
       const result = await analyzeSymptoms(symptomText);
-      
-      // Transform the result into the expected format
+
       const analysisResult = {
         condition: result.diagnosis || result.condition,
         confidence: result.confidence || 0.8,
@@ -83,93 +81,133 @@ export function SymptomForm() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Video Background */}
+      {/* Smooth Background Transition */}
       <div className="absolute inset-0 z-0">
-        {backgroundVideos.map((video, index) => (
-          <video
-            key={video}
-            src={video}
-            autoPlay
-            muted
-            loop
-            playsInline
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
-              currentVideoIndex === index ? 'opacity-100' : 'opacity-0'
-            } ${isTransitioning ? 'scale-105' : 'scale-100'}`}
+        {backgroundImages.map((img, index) => (
+          <img
+            key={img}
+            src={img}
+            alt="Background"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+              currentImageIndex === index ? 'opacity-100' : 'opacity-0'
+            }`}
           />
         ))}
-        <div className="absolute inset-0 bg-black/50"></div>
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-2xl bg-white rounded-lg shadow-xl p-8">
-          <h2 className="text-3xl font-bold text-center mb-8 text-blue-800">
-            describe your symptoms to daktari
-          </h2>
-          
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-4">
-              <label className="block">
-                <span className="text-sm font-medium text-green-700">Main Symptom</span>
+      {/* Semi-transparent overlay for better readability */}
+      <div className="absolute inset-0 z-0 bg-black/20"></div>
+
+      {/* Main Content */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+        <div className="w-full max-w-2xl bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 hover:shadow-3xl">
+          {/* Form Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-teal-500 p-6 text-center">
+            <h2 className="text-3xl font-bold text-white drop-shadow-md">
+              Symptom Analysis Portal
+            </h2>
+            <p className="mt-2 text-blue-100">
+              Describe your symptoms to receive AI-powered health insights
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
+            <div className="space-y-5">
+              {/* Main Symptom Field */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Main Symptom <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   {...register('mainSymptom')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className={`mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all ${
+                    errors.mainSymptom ? 'border-red-300' : ''
+                  }`}
                   rows={3}
-                  placeholder="Example: severe headache with throbbing pain on the right side"
+                  placeholder="Describe your primary symptom in detail (e.g., severe headache with throbbing pain on the right side)"
                 />
                 {errors.mainSymptom && (
-                  <p className="mt-1 text-sm text-red-600">{errors.mainSymptom?.message?.toString()}</p>
+                  <p className="mt-1 text-sm text-red-600 animate-pulse">
+                    {errors.mainSymptom?.message?.toString()}
+                  </p>
                 )}
-              </label>
+              </div>
 
-              <label className="block">
-                <span className="text-sm font-medium text-green-700">Duration</span>
+              {/* Duration Field */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Duration <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   {...register('duration')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="Example: 3 days, 2 weeks, etc."
+                  className={`mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all ${
+                    errors.duration ? 'border-red-300' : ''
+                  }`}
+                  placeholder="How long have you experienced this? (e.g., 3 days, 2 weeks)"
                 />
                 {errors.duration && (
-                  <p className="mt-1 text-sm text-red-600">{errors.duration?.message?.toString()}</p>
+                  <p className="mt-1 text-sm text-red-600 animate-pulse">
+                    {errors.duration?.message?.toString()}
+                  </p>
                 )}
-              </label>
+              </div>
 
-              <label className="block">
-                <span className="text-sm font-medium text-green-700">Severity</span>
+              {/* Severity Field */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Severity <span className="text-red-500">*</span>
+                </label>
                 <select
                   {...register('severity')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className={`mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all ${
+                    errors.severity ? 'border-red-300' : ''
+                  }`}
                 >
                   <option value="mild">Mild - Noticeable but not interfering with daily activities</option>
                   <option value="moderate">Moderate - Affecting some daily activities</option>
                   <option value="severe">Severe - Significantly impacting daily life</option>
                 </select>
                 {errors.severity && (
-                  <p className="mt-1 text-sm text-red-600">{errors.severity?.message?.toString()}</p>
+                  <p className="mt-1 text-sm text-red-600 animate-pulse">
+                    {errors.severity?.message?.toString()}
+                  </p>
                 )}
-              </label>
+              </div>
 
-              <label className="block">
-                <span className="text-sm font-medium text-green-700">Additional Information</span>
+              {/* Additional Info Field */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Additional Information
+                </label>
                 <textarea
                   {...register('additionalInfo')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                   rows={3}
-                  placeholder="Example: symptoms worsen in the morning, associated with nausea, etc."
+                  placeholder="Any other relevant information (e.g., symptoms worsen in the morning, associated with nausea, etc.)"
                 />
-              </label>
+              </div>
             </div>
 
+            {/* Submit Button */}
             <Button
               type="submit"
-              className={`w-full py-3 rounded-md bg-red-600 text-white font-medium hover:bg-blue-700 transition-colors ${
-                isSubmitting || isAnalyzing ? 'opacity-75 cursor-not-allowed' : ''
+              className={`w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-teal-500 text-white font-semibold shadow-lg hover:from-blue-700 hover:to-teal-600 transition-all transform hover:scale-[1.02] ${
+                isSubmitting || isAnalyzing ? 'opacity-80 cursor-not-allowed' : ''
               }`}
               disabled={isSubmitting || isAnalyzing}
             >
-              {isAnalyzing ? 'Analyzing Symptoms...' : isSubmitting ? 'Submitting...' : 'Submit Symptoms'}
+              <span className="flex items-center justify-center">
+                {isAnalyzing ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Analyzing...
+                  </>
+                ) : isSubmitting ? 'Submitting...' : 'Analyze My Symptoms'}
+              </span>
             </Button>
           </form>
         </div>
@@ -177,16 +215,21 @@ export function SymptomForm() {
 
       {/* Analysis Results */}
       {analysis && (
-        <div className="relative z-10 mt-8 mx-auto max-w-2xl bg-white rounded-lg shadow-xl p-8">
-          <AIAnalysis 
-            symptoms={{
-              mainSymptom: analysis.condition,
-              severity: analysis.severity,
-              duration: analysis.duration,
-              confidence: analysis.confidence,
-              recommendations: analysis.recommendations
-            }} 
-          />
+        <div className="relative z-10 -mt-8 mx-auto max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-500 animate-fade-in-up">
+          <div className="bg-gradient-to-r from-blue-600 to-teal-500 p-4 text-center">
+            <h3 className="text-xl font-bold text-white">Analysis Results</h3>
+          </div>
+          <div className="p-6">
+            <AIAnalysis
+              symptoms={{
+                mainSymptom: analysis.condition,
+                severity: analysis.severity,
+                duration: analysis.duration,
+                confidence: analysis.confidence,
+                recommendations: analysis.recommendations
+              }}
+            />
+          </div>
         </div>
       )}
     </div>

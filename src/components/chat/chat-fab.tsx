@@ -1,26 +1,34 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect, useRef } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useChatStore, useAuthStore } from '../../lib/store';
 import { format } from 'date-fns';
 import { analyzeSymptoms } from '../../lib/ml-model';
 import { toast } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type Message = {
   text: string;
   sender: 'user' | 'doctor' | 'system';
-  timestamp?: number; // Optional property for timestamp
-  id: string; // Ensure the message has an 'id' field for unique identification
+  timestamp?: number;
+  id: string;
 };
 
 export function ChatFAB() {
   const { isOpen, toggleChat, messages, addMessage } = useChatStore();
   const user = useAuthStore((state) => state.user);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const hasGreeted = messages.some(
     (msg) => msg.sender === 'system' && msg.text.includes('describe your symptoms')
   );
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
 
   const handleSendMessage = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,11 +37,17 @@ export function ChatFAB() {
     const message = input.value.trim();
 
     if (message) {
-      const newMessage: Message = { text: message, sender: 'user', timestamp: Date.now(), id: `${Date.now()}` };
+      const newMessage: Message = { 
+        text: message, 
+        sender: 'user', 
+        timestamp: Date.now(), 
+        id: `${Date.now()}` 
+      };
       addMessage(newMessage);
       input.value = '';
 
       if (!hasGreeted) {
+        setIsTyping(true);
         setTimeout(() => {
           const greetMessage: Message = {
             text: `Hello ${user?.username || 'patient'}, describe your symptoms to daktari 😊.`,
@@ -42,12 +56,16 @@ export function ChatFAB() {
             id: `${Date.now()}`,
           };
           addMessage(greetMessage);
-        }, 500);
+          setIsTyping(false);
+        }, 1500);
       } else {
         setIsAnalyzing(true);
+        setIsTyping(true);
+        
         try {
           const analysis = await analyzeSymptoms(message);
 
+          // Simulate typing for the analysis message
           setTimeout(() => {
             const analysisMessage: Message = {
               text: `Based on your symptoms, our doctor's analysis suggests:
@@ -75,8 +93,9 @@ If symptoms persist or worsen, please schedule a consultation with one of our do
               id: `${Date.now()}`,
             };
             addMessage(analysisMessage);
-          }, 1000);
+          }, 2000);
 
+          // Simulate typing for the thank you message
           setTimeout(() => {
             const thankYouMessage: Message = {
               text: 'Thank you for your message. Daktari will review your case shortly.',
@@ -85,7 +104,8 @@ If symptoms persist or worsen, please schedule a consultation with one of our do
               id: `${Date.now()}`,
             };
             addMessage(thankYouMessage);
-          }, 2000);
+            setIsTyping(false);
+          }, 3500);
         } catch {
           toast.error('Failed to analyze symptoms. Please try again.');
           const errorMessage: Message = {
@@ -95,6 +115,7 @@ If symptoms persist or worsen, please schedule a consultation with one of our do
             id: `${Date.now()}`,
           };
           addMessage(errorMessage);
+          setIsTyping(false);
         } finally {
           setIsAnalyzing(false);
         }
@@ -104,81 +125,123 @@ If symptoms persist or worsen, please schedule a consultation with one of our do
 
   return (
     <>
-      <Button
-        onClick={toggleChat}
-        className="fixed bottom-4 right-4 rounded-full w-12 h-12 bg-blue-600 text-white shadow-lg z-50 transition-transform hover:scale-105"
+      <motion.div
+        initial={{ scale: 1 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="fixed bottom-4 right-4 z-50"
       >
-        <MessageCircle className="h-6 w-6" />
-      </Button>
+        <Button
+          onClick={toggleChat}
+          className="rounded-full w-12 h-12 bg-blue-600 text-white shadow-lg transition-all"
+        >
+          <MessageCircle className="h-6 w-6" />
+        </Button>
+      </motion.div>
 
-      {isOpen && (
-        <div className="fixed bottom-20 right-4 w-[90%] max-w-sm bg-white rounded-lg shadow-xl z-50 transition-all duration-300 ease-in-out transform">
-          <div className="flex items-center justify-between p-3 border-b bg-blue-600 text-white rounded-t-lg">
-            <div>
-              <h3 className="text-lg font-semibold">welcome to teleCure health 🩺</h3>
-              <p className="text-sm text-blue-100">chat with our online doctor 👨‍⚕️ 😊</p>
-            </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={toggleChat}
-              className="p-1 hover:bg-blue-700"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-
-          <div className="h-72 overflow-y-auto p-4 space-y-4 bg-gray-50">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex flex-col ${message.sender === 'user' ? 'items-end' : 'items-start'}`}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed bottom-20 right-4 w-[90%] max-w-sm bg-white rounded-lg shadow-xl z-50 overflow-hidden"
+          >
+            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-600 to-blue-500 text-white">
+              <div>
+                <h3 className="text-lg font-semibold">Welcome to teleCure Health 🩺</h3>
+                <p className="text-sm text-blue-100">Chat with our online doctor 👨‍⚕️</p>
+              </div>
+              <motion.button
+                whileHover={{ rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={toggleChat}
+                className="p-1 rounded-full hover:bg-blue-700 transition-colors"
               >
-                <div
-                  className={`max-w-[80%] rounded-lg p-3 whitespace-pre-wrap ${
-                    message.sender === 'user'
-                      ? 'bg-blue-500 text-white'
-                      : message.sender === 'system'
-                      ? 'bg-teal-100 text-teal-800'
-                      : 'bg-green-500 text-white'
-                  }`}
+                <X className="h-5 w-5" />
+              </motion.button>
+            </div>
+
+            <div className="h-72 overflow-y-auto p-4 space-y-4 bg-gray-50">
+              {messages.map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className={`flex flex-col ${message.sender === 'user' ? 'items-end' : 'items-start'}`}
                 >
-                  {message.text}
-                </div>
-                <span className="text-xs text-gray-500 mt-1">
-                  {format(new Date(message.timestamp!), 'HH:mm')}
-                </span>
-              </div>
-            ))}
-            {isAnalyzing && (
-              <div className="flex items-center justify-center space-x-2 text-gray-500">
-                <div className="animate-bounce">●</div>
-                <div className="animate-bounce delay-100">●</div>
-                <div className="animate-bounce delay-200">●</div>
-              </div>
-            )}
-          </div>
-
-          <form onSubmit={handleSendMessage} className="p-3 border-t bg-white rounded-b-lg">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                name="message"
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Type your message..."
-                disabled={isAnalyzing}
-              />
-              <Button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={isAnalyzing}
-              >
-                Send
-              </Button>
+                  <div
+                    className={`max-w-[80%] rounded-lg p-3 whitespace-pre-wrap shadow-sm ${
+                      message.sender === 'user'
+                        ? 'bg-blue-500 text-white rounded-br-none'
+                        : message.sender === 'system'
+                        ? 'bg-teal-100 text-teal-800 rounded-bl-none'
+                        : 'bg-green-500 text-white rounded-bl-none'
+                    }`}
+                  >
+                    {message.text}
+                  </div>
+                  <span className="text-xs text-gray-500 mt-1">
+                    {format(new Date(message.timestamp!), 'HH:mm')}
+                  </span>
+                </motion.div>
+              ))}
+              
+              {isTyping && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex items-start space-x-2"
+                >
+                  <div className="bg-teal-100 text-teal-800 rounded-lg rounded-bl-none p-3 shadow-sm">
+                    <div className="flex space-x-1">
+                      <motion.span
+                        animate={{ y: [0, -5, 0] }}
+                        transition={{ repeat: Infinity, duration: 1, repeatDelay: 0.2 }}
+                        className="inline-block w-2 h-2 bg-green-500 rounded-full"
+                      />
+                      <motion.span
+                        animate={{ y: [0, -5, 0] }}
+                        transition={{ repeat: Infinity, duration: 1, delay: 0.2, repeatDelay: 0.2 }}
+                        className="inline-block w-2 h-2 bg-green-500 rounded-full"
+                      />
+                      <motion.span
+                        animate={{ y: [0, -5, 0] }}
+                        transition={{ repeat: Infinity, duration: 1, delay: 0.4, repeatDelay: 0.2 }}
+                        className="inline-block w-2 h-2 bg-green-500 rounded-full"
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
-          </form>
-        </div>
-      )}
+
+            <form onSubmit={handleSendMessage} className="p-3 border-t bg-white">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  name="message"
+                  className="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 transition-all"
+                  placeholder="Type your message..."
+                  disabled={isAnalyzing}
+                />
+                <motion.button
+                  type="submit"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-all disabled:opacity-50"
+                  disabled={isAnalyzing}
+                >
+                  Send
+                </motion.button>
+              </div>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

@@ -8,7 +8,9 @@ import { PaymentForm } from './components/payment/payment-form';
 import { AIAnalysis } from './components/analysis/ai-analysis';
 import { ChatFAB } from './components/chat/chat-fab';
 import { useAuthStore } from './lib/store';
-import { PopupAd } from './components/PopupAd'; // Import the PopupAd component
+import { PopupAd } from './components/PopupAd';
+import { HomePage } from './components/HomePage';
+import MentalWellnessPage from './components/MentalWellnessPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -24,8 +26,10 @@ function App() {
         <Header />
         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
           <Routes>
+            <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginForm />} />
             <Route path="/register" element={<RegisterForm />} />
+            <Route path="/mental-wellness" element={<MentalWellnessPage />} />
             <Route
               path="/symptoms"
               element={
@@ -42,15 +46,15 @@ function App() {
                 </PrivateRoute>
               }
             />
-            <Route path="/" element={<Navigate to="/register" />} />
+            {/* Add other routes as needed */}
           </Routes>
         </main>
         {isAuthenticated && <ChatFAB />}
         <Toaster position="top-right" />
-        <PopupAd /> {/* Add the PopupAd component */}
+        <PopupAd />
       </div>
     </Router>
   );
 }
 
-export default App;
+export default App; 
