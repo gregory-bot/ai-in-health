@@ -277,7 +277,7 @@ export function HomePage() {
             <p className="text-gray-700 mb-2">
               Join moderated support circles and connect with mentors.
             </p>
-            <Link to="/resources">
+            <Link to="/mental-wellness">
               <Button className="bg-blue-700 text-white mt-2">Try Now</Button>
             </Link>
           </div>

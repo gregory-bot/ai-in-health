@@ -624,10 +624,16 @@ return (
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <button className="bg-pink-600 hover:bg-pink-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center">
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Join Group
-                    </button>
+<a
+  href="https://chat.whatsapp.com/Lf1ZO1iAybuGxnKV3ZiO5l"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="bg-pink-600 hover:bg-pink-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center"
+>
+  <MessageCircle className="h-4 w-4 mr-2" />
+  Join Group
+</a>
+
                     
                     <div className="flex items-center text-gray-500 text-sm">
                       <Lock className="h-4 w-4 mr-1" />
@@ -667,8 +673,8 @@ d (with your permission).
             <div className="p-8 flex flex-col items-center">
               <SosButton onClick={handleSOSClick} />
               
-              <p className="mt-6 text-sm text-gray-500 text-center max-w-sm">
-                This button is for mental health crises. For medical emergencies, please dial your local emergency number (911 in the US).
+              <p className="mt-6 text-xl text-gray-500 text-center max-w-sm">
+                This button is for mental health crises. For medical emergencies, please dial your local emergency number (911 in Nairobi).
               </p>
             </div>
           </div>
@@ -741,7 +747,7 @@ d (with your permission).
                       onClick={() => callResource('911')}
                       className="mt-3 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors duration-300"
                     >
-                      Call 911 (US Emergency Services)
+                      Call 911 (Nairobi Emergency Services)
                     </button>
                   </div>
                 </div>
