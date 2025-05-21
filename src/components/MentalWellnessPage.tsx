@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, ClipboardCheck, MessageSquare, Send, Bot, RefreshCw, User, Users, Calendar, Lock, Phone, MapPin, AlarmClock, X, MessageCircle } from 'lucide-react';
+import { Sparkles, ClipboardCheck, BarChart3, MessageSquare, Send, Bot, RefreshCw, User, Users, Calendar, Lock, Phone, MapPin, AlarmClock, X, MessageCircle, MessageCircleMore } from 'lucide-react';
 
 // Types
 interface Question {
@@ -55,7 +55,13 @@ const assessments: Assessment[] = [
         scale: [0, 1, 2, 3],
         labels: ['Not at all', 'Several days', 'More than half the days', 'Nearly every day']
       },
-      // Additional questions would be added here
+      {
+        id: 2,
+        text: 'Feeling down, depressed, or hopeless',
+        scale: [0, 1, 2, 3],
+        labels: ['Not at all', 'Several days', 'More than half the days', 'Nearly every day']
+      },
+      // Add more PHQ-9 questions here for a real assessment
     ]
   },
   {
@@ -69,7 +75,13 @@ const assessments: Assessment[] = [
         scale: [0, 1, 2, 3],
         labels: ['Not at all', 'Several days', 'More than half the days', 'Nearly every day']
       },
-      // Additional questions would be added here
+      {
+        id: 2,
+        text: 'Not being able to stop or control worrying',
+        scale: [0, 1, 2, 3],
+        labels: ['Not at all', 'Several days', 'More than half the days', 'Nearly every day']
+      },
+      // Add more GAD-7 questions here for a real assessment
     ]
   }
 ];
@@ -131,13 +143,34 @@ const emergencyResources: EmergencyResource[] = [
   }
 ];
 
+// Helper functions for scoring and recommendations
+function getAssessmentScore(assessment: Assessment, answers: Record<number, number>) {
+  return assessment.questions.reduce((sum, q) => sum + (answers[q.id] ?? 0), 0);
+}
+
+function getAssessmentResult(assessment: Assessment, score: number) {
+  if (assessment.id === 'phq9') {
+    if (score <= 4) return { level: 'Minimal', advice: 'Your depression symptoms are minimal. Keep monitoring your mood and practice self-care.' };
+    if (score <= 9) return { level: 'Mild', advice: 'Mild depression symptoms. Consider lifestyle changes and regular check-ins.' };
+    if (score <= 14) return { level: 'Moderate', advice: 'Moderate symptoms. It may help to talk to a counselor or therapist.' };
+    if (score <= 19) return { level: 'Moderately Severe', advice: 'Moderately severe symptoms. Professional support is recommended.' };
+    return { level: 'Severe', advice: 'Severe symptoms. Please seek help from a mental health professional as soon as possible.' };
+  }
+  if (assessment.id === 'gad7') {
+    if (score <= 4) return { level: 'Minimal', advice: 'Minimal anxiety. Keep up your self-care routines.' };
+    if (score <= 9) return { level: 'Mild', advice: 'Mild anxiety. Try relaxation techniques and monitor your symptoms.' };
+    if (score <= 14) return { level: 'Moderate', advice: 'Moderate anxiety. Consider speaking with a counselor.' };
+    return { level: 'Severe', advice: 'Severe anxiety. Please consult a mental health professional.' };
+  }
+  return { level: 'Unknown', advice: 'No recommendation available.' };
+}
+
 // SOS Button Component
 const SosButton: React.FC<{ onClick: () => void }> = ({ onClick }) => {
   return (
     <div className="relative">
       <div className="absolute inset-0 rounded-full animate-ping bg-red-200 opacity-75"></div>
       <div className="absolute inset-0 rounded-full animate-ping bg-red-300 opacity-75 animation-delay-300"></div>
-      
       <button
         onClick={onClick}
         className="relative bg-red-600 hover:bg-red-700 text-white font-bold py-6 px-6 rounded-full w-40 h-40 border-4 border-red-700 shadow-lg transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-red-500 focus:ring-opacity-50 z-10"
@@ -172,7 +205,7 @@ function App() {
 
   // Crisis SOS State
   const [showResourcesModal, setShowResourcesModal] = useState(false);
-  const [userLocation, setUserLocation] = useState<{lat: number; lng: number} | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   // Assessment Handlers
   const handleAssessmentSelect = (id: string) => {
@@ -182,11 +215,10 @@ function App() {
   };
 
   const handleAnswer = (questionId: number, value: number) => {
-    setAnswers({...answers, [questionId]: value});
-    
+    setAnswers({ ...answers, [questionId]: value });
     const assessment = assessments.find(a => a.id === selectedAssessment);
     if (assessment && currentStep < assessment.questions.length - 1) {
-      setCurrentStep(currentStep + 1);5
+      setCurrentStep(currentStep + 1);
     }
   };
 
@@ -197,60 +229,129 @@ function App() {
   };
 
   // Chatbot Handlers
-  const generateResponse = (userMessage: string): string => {
-    const lowerCaseMessage = userMessage.toLowerCase();
-    
-    if (lowerCaseMessage.includes('suicide') || 
-        lowerCaseMessage.includes('kill myself') || 
-        lowerCaseMessage.includes('want to die')) {
-      setShowRiskAlert(true);
-      return "I'm concerned about what you're sharing. It sounds like you're going through a really difficult time. I think it would be helpful to connect you with a trained professional who can provide better support.";
-    }
-    
-    if (lowerCaseMessage.includes('sad') || lowerCaseMessage.includes('depressed')) {
-      return "I'm sorry to hear you're feeling down. Would you like to try a quick breathing exercise together, or perhaps I can suggest some mood-lifting activities?";
-    }
-    
-    if (lowerCaseMessage.includes('anxious') || lowerCaseMessage.includes('worried')) {
-      return "Anxiety can be really challenging. Let's take a moment to ground ourselves. Can you name 5 things you can see right now? This can help bring you to the present moment.";
-    }
-    
-    return "Thank you for sharing. Can you tell me more about what's on your mind today?";
-  };
+const generateResponse = (userMessage: string): string => {
+  const lowerCaseMessage = userMessage.toLowerCase();
 
-  const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
-    
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      sender: 'user',
-      text: inputValue,
+  // Crisis detection
+  if (
+    lowerCaseMessage.includes('suicide') ||
+    lowerCaseMessage.includes('kill myself') ||
+    lowerCaseMessage.includes('want to die') ||
+    lowerCaseMessage.includes('end my life')
+  ) {
+    setShowRiskAlert(true);
+    return "I'm concerned about what you're sharing. You're not alone, and support is available. Would you like to talk to a counselor or see crisis resources?";
+  }
+
+  // Depression
+  if (
+    lowerCaseMessage.includes('sad') ||
+    lowerCaseMessage.includes('depressed') ||
+    lowerCaseMessage.includes('hopeless') ||
+    lowerCaseMessage.includes('empty') ||
+    lowerCaseMessage.includes('worthless') ||
+    lowerCaseMessage.includes('no energy')
+  ) {
+    const suggestions = [
+      "I'm sorry you're feeling this way. Sometimes writing down your thoughts or talking to a friend can help.",
+      "Would you like to try a guided breathing exercise or a short gratitude activity?",
+      "Remember, it's okay to ask for help. If you'd like, I can suggest some support groups or professional resources.",
+      "Taking a short walk or listening to calming music might help lift your mood a bit.",
+      "Would you like to hear a positive affirmation or a motivational quote?"
+    ];
+    return suggestions[Math.floor(Math.random() * suggestions.length)];
+  }
+
+  // Anxiety
+  if (
+    lowerCaseMessage.includes('anxious') ||
+    lowerCaseMessage.includes('worried') ||
+    lowerCaseMessage.includes('panic') ||
+    lowerCaseMessage.includes('overwhelmed') ||
+    lowerCaseMessage.includes('nervous') ||
+    lowerCaseMessage.includes('racing heart')
+  ) {
+    const suggestions = [
+      "Anxiety can be tough. Try the 5-4-3-2-1 grounding technique: Name 5 things you see, 4 you can touch, 3 you hear, 2 you smell, and 1 you taste.",
+      "Would you like to try a short mindfulness exercise or a calming visualization?",
+      "Remember to take slow, deep breaths. Inhale for 4 seconds, hold for 4, exhale for 4.",
+      "If you're comfortable, you can share more about what's making you anxious. I'm here to listen.",
+      "Would you like some tips for managing anxiety or information about support groups?"
+    ];
+    return suggestions[Math.floor(Math.random() * suggestions.length)];
+  }
+
+  // Sleep issues
+  if (
+    lowerCaseMessage.includes('can\'t sleep') ||
+    lowerCaseMessage.includes('insomnia') ||
+    lowerCaseMessage.includes('sleeping badly') ||
+    lowerCaseMessage.includes('trouble sleeping')
+  ) {
+    return "Sleep issues are common. Try to keep a regular bedtime, avoid screens before bed, and practice relaxation techniques. Would you like a guided sleep meditation?";
+  }
+
+  // Stress
+  if (
+    lowerCaseMessage.includes('stressed') ||
+    lowerCaseMessage.includes('burned out') ||
+    lowerCaseMessage.includes('overwhelmed') ||
+    lowerCaseMessage.includes('too much work')
+  ) {
+    return "Stress can build up quickly. Taking short breaks, stretching, or talking to someone you trust can help. Would you like a quick stress-relief exercise or to talk more about what's on your mind?";
+  }
+
+  // Loneliness
+  if (
+    lowerCaseMessage.includes('lonely') ||
+    lowerCaseMessage.includes('alone') ||
+    lowerCaseMessage.includes('isolated')
+  ) {
+    return "Feeling lonely is tough. Would you like to join a peer support group or connect with others who understand what you're going through?";
+  }
+
+  // Motivation
+  if (
+    lowerCaseMessage.includes('unmotivated') ||
+    lowerCaseMessage.includes('no motivation') ||
+    lowerCaseMessage.includes('can\'t focus')
+  ) {
+    return "Motivation can come and go. Setting small, achievable goals and celebrating little wins can help. Would you like some productivity tips or a motivational quote?";
+  }
+
+  // Default fallback
+  return "Feel free to talk to teleCure health🙂, I'm here to listen and support you. Can you tell me more about how you're feeling or what you'd like help with?";
+};
+
+const handleSendMessage = () => {
+  if (!inputValue.trim()) return;
+  const userMessage: Message = {
+    id: Date.now().toString(),
+    sender: 'user',
+    text: inputValue,
+    timestamp: new Date()
+  };
+  setMessages(prev => [...prev, userMessage]);
+  setInputValue('');
+  setIsThinking(true);
+  setTimeout(() => {
+    const botResponse: Message = {
+      id: (Date.now() + 1).toString(),
+      sender: 'bot',
+      text: generateResponse(userMessage.text),
       timestamp: new Date()
     };
-    
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
-    setIsThinking(true);
-    
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        sender: 'bot',
-        text: generateResponse(userMessage.text),
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, botResponse]);
-      setIsThinking(false);
-    }, 1500);
-  };
+    setMessages(prev => [...prev, botResponse]);
+    setIsThinking(false);
+  }, 1500);
+};
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
+const handleKeyPress = (e: React.KeyboardEvent) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    handleSendMessage();
+  }
+};
 
   // Crisis SOS Handlers
   const handleSOSClick = () => {
@@ -274,7 +375,7 @@ function App() {
 
   const connectToLiveCounselor = () => {
     setMessages(prev => [
-      ...prev, 
+      ...prev,
       {
         id: Date.now().toString(),
         sender: 'bot',
@@ -285,61 +386,57 @@ function App() {
     setShowRiskAlert(false);
   };
 
-const heroImages = [
-  "https://images.pexels.com/photos/3786157/pexels-photo-3786157.jpeg?auto=compress&cs=tinysrgb&w=1200",
-  "https://th.bing.com/th/id/OIP.aCFNQ4HBUV9RP00fm6tIwwHaEK?cb=iwc2&rs=1&pid=ImgDetMain",
-  "https://actionchange.org/wp-content/uploads/2019/10/pict_large-6.jpg",
-  "https://th.bing.com/th/id/OIP.UtX0_UXLxAYlc7JqCwGN6gHaE0?cb=iwc2&rs=1&pid=ImgDetMain",
-];
+  const heroImages = [
+    "https://images.pexels.com/photos/3786157/pexels-photo-3786157.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    "https://th.bing.com/th/id/OIP.aCFNQ4HBUV9RP00fm6tIwwHaEK?cb=iwc2&rs=1&pid=ImgDetMain",
+    "https://actionchange.org/wp-content/uploads/2019/10/pict_large-6.jpg",
+    "https://th.bing.com/th/id/OIP.UtX0_UXLxAYlc7JqCwGN6gHaE0?cb=iwc2&rs=1&pid=ImgDetMain",
+  ];
 
-return (
-  <div className="min-h-screen bg-gradient-to-b from-gray-50 to-pink-50">
-    {/* Hero Section */}
-    <div className="relative overflow-hidden">
-      {/* 2x2 Image Grid Background */}
-      <div className="absolute inset-0 w-full h-full grid grid-cols-2 grid-rows-2 z-0">
-        <img
-          src={heroImages[0]}
-          alt="Hero 1"
-          className="object-cover w-full h-full"
-          style={{ filter: "brightness(0.7)" }}
-        />
-        <img
-          src={heroImages[1]}
-          alt="Hero 2"
-          className="object-cover w-full h-full"
-          style={{ filter: "brightness(0.7)" }}
-        />
-        <img
-          src={heroImages[2]}
-          alt="Hero 3"
-          className="object-cover w-full h-full"
-          style={{ filter: "brightness(0.7)" }}
-        />
-        <img
-          src={heroImages[3]}
-          alt="Hero 4"
-          className="object-cover w-full h-full"
-          style={{ filter: "brightness(0.7)" }}
-        />
-      </div>
-      {/* Overlay for contrast */}
-      <div className="absolute inset-0 bg-black/40 z-10"></div>
-
-      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 flex flex-col items-center text-center">
-        <div className="animate-fade-in-down">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight">
-            Your Journey to Mental Wellness
-          </h1>
-          <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-8">
-            A safe space to assess, connect, and nurture your mental health. All resources are private and confidential.
-          </p>
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-pink-50">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        {/* 2x2 Image Grid Background */}
+        <div className="absolute inset-0 w-full h-full grid grid-cols-2 grid-rows-2 z-0">
+          <img
+            src={heroImages[0]}
+            alt="Hero 1"
+            className="object-cover w-full h-full"
+            style={{ filter: "brightness(0.7)" }}
+          />
+          <img
+            src={heroImages[1]}
+            alt="Hero 2"
+            className="object-cover w-full h-full"
+            style={{ filter: "brightness(0.7)" }}
+          />
+          <img
+            src={heroImages[2]}
+            alt="Hero 3"
+            className="object-cover w-full h-full"
+            style={{ filter: "brightness(0.7)" }}
+          />
+          <img
+            src={heroImages[3]}
+            alt="Hero 4"
+            className="object-cover w-full h-full"
+            style={{ filter: "brightness(0.7)" }}
+          />
         </div>
-
-        <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-4 px-4">
+        {/* Overlay for contrast */}
+        <div className="absolute inset-0 bg-black/40 z-10"></div>
+        <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 flex flex-col items-center text-center">
+          <div className="animate-fade-in-down">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight">
+              Your Journey to Mental Wellness
+            </h1>
+            <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-8">
+              A safe space to assess, connect, and nurture your mental health. All resources are private and confidential.
+            </p>
+          </div>
         </div>
       </div>
-    </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-24">
         {/* Assessment Section */}
@@ -351,19 +448,18 @@ return (
               Your results are private and stored securely to help track your progress.
             </p>
           </div>
-
           {!selectedAssessment ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
               {assessments.map((assessment) => (
-                <div key={assessment.id} 
-                     className="bg-white rounded-xl shadow-md overflow-hidden transform transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                <div key={assessment.id}
+                  className="bg-white rounded-xl shadow-md overflow-hidden transform transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
                   <div className="p-6">
                     <div className="flex items-center mb-4">
                       <ClipboardCheck className="h-8 w-8 text-pink-600 mr-3" />
                       <h3 className="text-xl font-semibold text-gray-800">{assessment.name}</h3>
                     </div>
                     <p className="text-gray-600 mb-6">{assessment.description}</p>
-                    <button 
+                    <button
                       onClick={() => handleAssessmentSelect(assessment.id)}
                       className="w-full bg-pink-600 hover:bg-pink-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300"
                     >
@@ -382,16 +478,23 @@ return (
                     <h3 className="text-2xl font-bold text-gray-800 mb-2">Assessment Complete</h3>
                     <p className="text-gray-600">Thank you for completing the assessment. Your results have been saved.</p>
                   </div>
-                  
                   <div className="bg-pink-50 rounded-lg p-6 mb-6">
                     <h4 className="font-semibold text-pink-800 mb-2">Your Score Summary</h4>
-                    <p className="text-gray-700">
-                      Based on your responses, your current score indicates mild symptoms.
-                      Remember that this is just a screening tool and not a diagnosis.
-                    </p>
+                    {(() => {
+                      const assessment = assessments.find(a => a.id === selectedAssessment)!;
+                      const score = getAssessmentScore(assessment, answers);
+                      const result = getAssessmentResult(assessment, score);
+                      return (
+                        <>
+                          <p className="text-gray-700 mb-2">
+                            <span className="font-bold">Score:</span> {score} ({result.level})
+                          </p>
+                          <p className="text-gray-700">{result.advice}</p>
+                        </>
+                      );
+                    })()}
                   </div>
-                  
-                  <button 
+                  <button
                     onClick={resetAssessment}
                     className="bg-pink-600 hover:bg-pink-700 text-white font-medium py-2 px-6 rounded-lg transition-colors duration-300"
                   >
@@ -408,24 +511,22 @@ return (
                       Question {currentStep + 1} of {assessments.find(a => a.id === selectedAssessment)?.questions.length}
                     </p>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
-                      <div className="bg-pink-600 h-2 rounded-full transition-all duration-500" 
-                          style={{ 
-                            width: `${((currentStep + 1) / (assessments.find(a => a.id === selectedAssessment)?.questions.length || 1)) * 100}%` 
-                          }}>
+                      <div className="bg-pink-600 h-2 rounded-full transition-all duration-500"
+                        style={{
+                          width: `${((currentStep + 1) / (assessments.find(a => a.id === selectedAssessment)?.questions.length || 1)) * 100}%`
+                        }}>
                       </div>
                     </div>
                   </div>
-                  
                   <div className="mb-8">
                     <h4 className="text-xl font-medium text-gray-800 mb-4">
                       {assessments.find(a => a.id === selectedAssessment)?.questions[currentStep]?.text}
                     </h4>
-                    
                     <div className="space-y-3">
                       {assessments.find(a => a.id === selectedAssessment)?.questions[currentStep]?.scale.map((value, index) => {
                         const labels = assessments.find(a => a.id === selectedAssessment)?.questions[currentStep]?.labels;
                         return (
-                          <button 
+                          <button
                             key={index}
                             onClick={() => handleAnswer(assessments.find(a => a.id === selectedAssessment)?.questions[currentStep]?.id || 0, value)}
                             className={`w-full text-left p-4 rounded-lg transition-all duration-200 ${
@@ -440,16 +541,15 @@ return (
                       })}
                     </div>
                   </div>
-                  
                   <div className="flex justify-between">
-                    <button 
+                    <button
                       onClick={resetAssessment}
                       className="text-pink-600 hover:text-pink-800 font-medium transition-colors duration-300"
                     >
                       Cancel
                     </button>
                     {currentStep > 0 && (
-                      <button 
+                      <button
                         onClick={() => setCurrentStep(currentStep - 1)}
                         className="text-pink-600 hover:text-pink-800 font-medium transition-colors duration-300"
                       >
@@ -781,7 +881,7 @@ d (with your permission).
               <h3 className="text-pink-200 font-medium mb-4">Connect With Us</h3>
               <div className="flex space-x-4">
                 <a
-                  href="https://twitter.com/"
+                  href="https://x.com/teleCureAI"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-pink-400 transition-colors duration-200"
@@ -820,10 +920,10 @@ d (with your permission).
             <div className="flex flex-col items-start">
               <h3 className="text-pink-200 font-medium mb-4">Contact</h3>
               <address className="not-italic text-gray-400 text-sm space-y-2">
-                <p>123 Health St, Suite 100</p>
-                <p>Medical City, MC 12345</p>
-                <p>Phone: (123) 456-7890</p>
-                <p>Email: info@telecure.com</p>
+                <p>Nairobi 20200</p>
+                <p>Nairobi - Kenya</p>
+                <p>Phone: (254) 748 163 492</p>
+                <p>Email: info@teleCure.com</p>
               </address>
             </div>
           </div>

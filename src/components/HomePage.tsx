@@ -11,6 +11,7 @@ import {
   Heart,
   UserCheck,
 } from "lucide-react";
+import { ImageDiagnosis } from "./ImageDiagnosis";
 
 // Replace with your preferred hero image
 const heroImage =
@@ -58,6 +59,14 @@ export function HomePage() {
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* Image Diagnosis Section */}
+      <div className="relative z-30 bg-white py-12 px-4">
+        <h2 className="text-3xl font-bold text-center mb-8 text-pink-700">
+          Upload an Image for AI Skin Diagnosis
+        </h2>
+        <ImageDiagnosis />
       </div>
 
       {/* How It Works / Gamified Guide */}

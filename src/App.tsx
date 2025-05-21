@@ -11,6 +11,7 @@ import { useAuthStore } from './lib/store';
 import { PopupAd } from './components/PopupAd';
 import { HomePage } from './components/HomePage';
 import MentalWellnessPage from './components/MentalWellnessPage';
+import { MessageCircle } from 'lucide-react'; // ✅ Import WhatsApp icon
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -22,9 +23,9 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 relative">
         <Header />
-        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 relative">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginForm />} />
@@ -46,9 +47,22 @@ function App() {
                 </PrivateRoute>
               }
             />
-            {/* Add other routes as needed */}
           </Routes>
+
+          {/* ✅ WhatsApp FAB inside scrollable content */}
+          <div className="sticky bottom-6 left-2 z-50 w-fit">
+            <a
+              href="https://wa.me/254748163492"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transition duration-300 flex items-center justify-center"
+              aria-label="Chat on WhatsApp"
+            >
+              <MessageCircle className="w-6 h-6" />
+            </a>
+          </div>
         </main>
+
         {isAuthenticated && <ChatFAB />}
         <Toaster position="top-right" />
         <PopupAd />
@@ -57,4 +71,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

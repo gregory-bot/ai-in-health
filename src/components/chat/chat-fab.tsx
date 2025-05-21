@@ -123,13 +123,14 @@ If symptoms persist or worsen, please schedule a consultation with one of our do
     }
   };
 
-  return (
-    <>
+return (
+  <>
+    {/* FAB button - scrolls with page */}
+    <div className="w-fit ml-auto mr-4 my-4">
       <motion.div
         initial={{ scale: 1 }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="fixed bottom-4 right-4 z-50"
       >
         <Button
           onClick={toggleChat}
@@ -138,110 +139,108 @@ If symptoms persist or worsen, please schedule a consultation with one of our do
           <MessageCircle className="h-6 w-6" />
         </Button>
       </motion.div>
+    </div>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-20 right-4 w-[90%] max-w-sm bg-white rounded-lg shadow-xl z-50 overflow-hidden"
-          >
-            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-600 to-blue-500 text-white">
-              <div>
-                <h3 className="text-lg font-semibold">Welcome to teleCure Health 🩺</h3>
-                <p className="text-sm text-blue-100">Chat with our online doctor 👨‍⚕️</p>
-              </div>
-              <motion.button
-                whileHover={{ rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={toggleChat}
-                className="p-1 rounded-full hover:bg-blue-700 transition-colors"
+    {/* Chat popup - fixed to bottom-right corner */}
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.9 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="fixed bottom-20 right-4 w-[90%] max-w-sm bg-white rounded-lg shadow-xl z-50 overflow-hidden"
+        >
+          {/* Chat header */}
+          <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-600 to-blue-500 text-white">
+            <div>
+              <h3 className="text-lg font-semibold">Welcome to teleCure Health 🩺</h3>
+              <p className="text-sm text-blue-100">Chat with our online doctor 👨‍⚕️</p>
+            </div>
+            <motion.button
+              whileHover={{ rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={toggleChat}
+              className="p-1 rounded-full hover:bg-blue-700 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </motion.button>
+          </div>
+
+          {/* Chat messages */}
+          <div className="h-72 overflow-y-auto p-4 space-y-4 bg-gray-50">
+            {messages.map((message) => (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className={`flex flex-col ${message.sender === 'user' ? 'items-end' : 'items-start'}`}
               >
-                <X className="h-5 w-5" />
+                <div
+                  className={`max-w-[80%] rounded-lg p-3 whitespace-pre-wrap shadow-sm ${
+                    message.sender === 'user'
+                      ? 'bg-blue-500 text-white rounded-br-none'
+                      : message.sender === 'system'
+                      ? 'bg-teal-100 text-teal-800 rounded-bl-none'
+                      : 'bg-green-500 text-white rounded-bl-none'
+                  }`}
+                >
+                  {message.text}
+                </div>
+                <span className="text-xs text-gray-500 mt-1">
+                  {format(new Date(message.timestamp!), 'HH:mm')}
+                </span>
+              </motion.div>
+            ))}
+
+            {isTyping && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-start space-x-2"
+              >
+                <div className="bg-teal-100 text-teal-800 rounded-lg rounded-bl-none p-3 shadow-sm">
+                  <div className="flex space-x-1">
+                    {[0, 0.2, 0.4].map((delay, i) => (
+                      <motion.span
+                        key={i}
+                        animate={{ y: [0, -5, 0] }}
+                        transition={{ repeat: Infinity, duration: 1, delay, repeatDelay: 0.2 }}
+                        className="inline-block w-2 h-2 bg-green-500 rounded-full"
+                      />
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Chat input */}
+          <form onSubmit={handleSendMessage} className="p-3 border-t bg-white">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                name="message"
+                className="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 transition-all"
+                placeholder="Type your message..."
+                disabled={isAnalyzing}
+              />
+              <motion.button
+                type="submit"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-all disabled:opacity-50"
+                disabled={isAnalyzing}
+              >
+                Send
               </motion.button>
             </div>
-
-            <div className="h-72 overflow-y-auto p-4 space-y-4 bg-gray-50">
-              {messages.map((message) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className={`flex flex-col ${message.sender === 'user' ? 'items-end' : 'items-start'}`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-lg p-3 whitespace-pre-wrap shadow-sm ${
-                      message.sender === 'user'
-                        ? 'bg-blue-500 text-white rounded-br-none'
-                        : message.sender === 'system'
-                        ? 'bg-teal-100 text-teal-800 rounded-bl-none'
-                        : 'bg-green-500 text-white rounded-bl-none'
-                    }`}
-                  >
-                    {message.text}
-                  </div>
-                  <span className="text-xs text-gray-500 mt-1">
-                    {format(new Date(message.timestamp!), 'HH:mm')}
-                  </span>
-                </motion.div>
-              ))}
-              
-              {isTyping && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex items-start space-x-2"
-                >
-                  <div className="bg-teal-100 text-teal-800 rounded-lg rounded-bl-none p-3 shadow-sm">
-                    <div className="flex space-x-1">
-                      <motion.span
-                        animate={{ y: [0, -5, 0] }}
-                        transition={{ repeat: Infinity, duration: 1, repeatDelay: 0.2 }}
-                        className="inline-block w-2 h-2 bg-green-500 rounded-full"
-                      />
-                      <motion.span
-                        animate={{ y: [0, -5, 0] }}
-                        transition={{ repeat: Infinity, duration: 1, delay: 0.2, repeatDelay: 0.2 }}
-                        className="inline-block w-2 h-2 bg-green-500 rounded-full"
-                      />
-                      <motion.span
-                        animate={{ y: [0, -5, 0] }}
-                        transition={{ repeat: Infinity, duration: 1, delay: 0.4, repeatDelay: 0.2 }}
-                        className="inline-block w-2 h-2 bg-green-500 rounded-full"
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            <form onSubmit={handleSendMessage} className="p-3 border-t bg-white">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  name="message"
-                  className="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 transition-all"
-                  placeholder="Type your message..."
-                  disabled={isAnalyzing}
-                />
-                <motion.button
-                  type="submit"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-all disabled:opacity-50"
-                  disabled={isAnalyzing}
-                >
-                  Send
-                </motion.button>
-              </div>
-            </form>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
-  );
-}
+          </form>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </>
+);
+} 
