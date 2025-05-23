@@ -4,7 +4,7 @@
 
 ## 🌐 Live Demo
 
-👉 [View Website](https://telecure-health.vercel.app)  
+👉 [View Website](https://telecurehospital-ke.netlify.app)  
 
 ---
 **X Account for teleCure** : https://x.com/teleCureAI
